@@ -11,13 +11,13 @@
 #include <math.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
+#include "libimage.h"
 
 #if defined(_DEBUG)
 #define dprintf(fmt, ...) printf("%s():%d "fmt,__func__,__LINE__,##__VA_ARGS__)
 #else
 #define dprintf(fmt, ...)
 #endif
-
 
 int main(int argc, char *argv[])
 {
@@ -47,73 +47,28 @@ int main(int argc, char *argv[])
   data      = (uchar *)img->imageData;
 char dstFile[256]={};
   printf("Processing a %dx%d image with %d channels\n",height,width,channels); 
-  dprintf("src widthStep=%d\n", step);
-  dprintf("src channels=%d\n", channels);
 
 
-  IplImage *dst = cvCreateImage(cvSize(img->width*5, img->height*5), img->depth, img->nChannels);
-  dprintf("dst widthStep=%d\n", dst->widthStep);
-  dprintf("dst channels=%d\n", dst->nChannels);
-
-  dst_data = (uchar *)dst->imageData;
-  /*
-  cvResize(img, dst, cv::INTER_CUBIC);
-	sprintf(dstFile, "cubic_%s", argv[1]);
+  IplImage *dst = NULL;
+  dst = bilinear(img, width*5, height*5);
+  sprintf(dstFile, "bl_%s", argv[1]);
   cvSaveImage(dstFile,dst);
 
-  cvResize(img, dst, cv::INTER_NEAREST);
-	sprintf(dstFile, "nearest_%s", argv[1]);
+  cvReleaseImage(&dst);
+  dst = NULL;
+
+  dst = bilinear1(img, width*5, height*5);
+  sprintf(dstFile, "bl1_%s", argv[1]);
   cvSaveImage(dstFile,dst);
 
-  cvResize(img, dst, cv::INTER_LANCZOS4);
-	sprintf(dstFile, "lanc_%s", argv[1]);
+  cvReleaseImage(&dst);
+  dst = NULL;
+
+  dst = nearRest(img, width*5, height*5);
+  sprintf(dstFile, "nr_%s", argv[1]);
   cvSaveImage(dstFile,dst);
 
-  for(i=0; i<height*5; i++)
-  {
-	  for(j=0; j<width*5; j++)
-	  {
-		  for(k=0; k<channels; k++)
-		  {
-			  dprintf(" %#x ", data[i*step%5+j*channels%5+k]);
-			dst_data[i*(dst->widthStep)+j*channels+k]=data[i*step%5+j*channels%5+k];
-		  }
-	  }
-  }
-  */
-  int count=0;
-
-  for(i=0;i<height*5;i++) 
-  {
-	  for(j=0;j<width*5;j++)
-	  {
-		  for(k=0;k<channels;k++)
-		  {
-			dst_data[i*dst->widthStep+j*channels+k]=data[i/5*step+j/5*channels+k];
-		  }
-	  }
-  }
-	sprintf(dstFile, "sr_%s", argv[1]);
-  cvSaveImage(dstFile,dst);
-
-
-  /*
-  // create a window
-  cvNamedWindow("mainWin", CV_WINDOW_AUTOSIZE); 
-  cvMoveWindow("mainWin", 100, 100);
-
-  // invert the image
-  for(i=0;i<height;i++) for(j=0;j<width;j++) for(k=0;k<channels;k++)
-    data[i*step+j*channels+k]=255-data[i*step+j*channels+k];
-
-  // show the image
-  cvShowImage("mainWin", dst );
-
-  // wait for a key
-  cvWaitKey(0);
-	*/
-  // release the image
-  cvReleaseImage(&img );
+//  cvReleaseImage(&img );
   cvReleaseImage(&dst );
   return 0;
 }
