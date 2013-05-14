@@ -13,62 +13,79 @@
 #include <opencv/highgui.h>
 #include "libimage.h"
 
-#if defined(_DEBUG)
-#define dprintf(fmt, ...) printf("%s():%d "fmt,__func__,__LINE__,##__VA_ARGS__)
-#else
-#define dprintf(fmt, ...)
-#endif
+using namespace cv;
+
+void cyclic_upscale(IplImage* img, float scale)
+{
+
+}
 
 int main(int argc, char *argv[])
 {
-  IplImage* img = 0; 
-  int height,width,step,channels;
-  uchar *data;
-  uchar *dst_data;
-  int i,j,k;
+	IplImage* img = 0; 
+	int height,width,step,channels;
+	uchar *data;
+	uchar *dst_data;
+	int i,j,k;
+	
+	if(argc<2){
+	  printf("Usage: main <image-file-name>\n\7");
+	  exit(0);
+	}
+	
+	// load an image  
+	img=cvLoadImage(argv[1]);
+	if(!img){
+	  printf("Could not load image file: %s\n",argv[1]);
+	  exit(0);
+	}
+	
+	// get the image data
+	height    = img->height;
+	width     = img->width;
+	step      = img->widthStep;
+	channels  = img->nChannels;
+	data      = (uchar *)img->imageData;
+	char dstFile[256]={};
+	char srcFile[256]={};
+	printf("Processing a %dx%d image with %d channels\n",height,width,channels); 
+	float scale=5.0;
+	
+	IplImage* dst = cvCreateImage(cvSize(width*scale, height*scale), IPL_DEPTH_8U, 3);
+	
+	cvResize(img, dst,  CV_INTER_CUBIC);
+	
+	IplImage* dst2=cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 3);
+	
+	cvResize(dst, dst2,  CV_INTER_CUBIC);
+	
+	IplImage* diffImg = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 3);
 
-  if(argc<2){
-    printf("Usage: main <image-file-name>\n\7");
-    exit(0);
-  }
+	cvSub(img, dst2, diffImg, NULL);
 
-  // load an image  
-  img=cvLoadImage(argv[1]);
-  if(!img){
-    printf("Could not load image file: %s\n",argv[1]);
-    exit(0);
-  }
+	IplImage* diff = cvCreateImage(cvSize(width*scale, height*scale), IPL_DEPTH_8U, 3);
+	cvResize(diffImg, diff, CV_INTER_CUBIC);
+	
 
-  // get the image data
-  height    = img->height;
-  width     = img->width;
-  step      = img->widthStep;
-  channels  = img->nChannels;
-  data      = (uchar *)img->imageData;
-char dstFile[256]={};
-  printf("Processing a %dx%d image with %d channels\n",height,width,channels); 
+	IplImage* result = cvCreateImage(cvSize(width*scale, height*scale), IPL_DEPTH_8U, 3);
+	cvAdd(diff, dst, result, NULL);
+	
+	cvNamedWindow("original", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("bicubic_und", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("result", CV_WINDOW_AUTOSIZE);
+	
+	cvShowImage("original", img);
+	cvShowImage("bicubic_und", dst2);
+	cvShowImage("result", result);
+	cvWaitKey(0);
+	
+	cvDestroyWindow("original");
+	cvDestroyWindow("bicubic_und");
+	cvDestroyWindow("result");
 
-
-  IplImage *dst = NULL;
-  dst = bilinear(img, width*5, height*5);
-  sprintf(dstFile, "bl_%s", argv[1]);
-  cvSaveImage(dstFile,dst);
-
-  cvReleaseImage(&dst);
-  dst = NULL;
-
-  dst = bilinear1(img, width*5, height*5);
-  sprintf(dstFile, "bl1_%s", argv[1]);
-  cvSaveImage(dstFile,dst);
-
-  cvReleaseImage(&dst);
-  dst = NULL;
-
-  dst = nearRest(img, width*5, height*5);
-  sprintf(dstFile, "nr_%s", argv[1]);
-  cvSaveImage(dstFile,dst);
-
-//  cvReleaseImage(&img );
-  cvReleaseImage(&dst );
-  return 0;
+	cvReleaseImage(&img);
+	cvReleaseImage(&dst);
+	cvReleaseImage(&dst2);
+	cvReleaseImage(&diffImg);
+	return 0;
 }
