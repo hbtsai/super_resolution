@@ -4,6 +4,7 @@ CXX=g++
 DBG_CFLAGS= -D_DEBUG -g
 CFLAGS= $(DBG_CFLAGS)
 CXXFLAGS=$(DBG_CFLAGS)
+LDFLAGS=-L/usr/local/lib
 LIBS= -lopencv_core -lopencv_highgui -lopencv_imgproc
 OBJS=main.o libimage.o
 
